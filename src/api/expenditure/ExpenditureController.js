@@ -15,7 +15,8 @@ module.exports = {
 
     store: function (req, res) {
         ModelExpenditure.create(req.body).then(function (row) {
-            res.send(row)
+            res.send(row),
+                res.status(200).send('OK')
         })
     },
 
