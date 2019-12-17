@@ -2,7 +2,7 @@ const ModelExpenditure = require('./ExpenditureModel')
 
 module.exports = {
     index: function (req, res) {
-        ModelExpenditure.find().then(function (rows) {
+        ModelExpenditure.find().populate('category').then(function (rows) {
             res.send(rows)
         })
     },
