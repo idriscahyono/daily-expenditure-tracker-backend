@@ -49,7 +49,7 @@ module.exports = {
     },
 
     currentMonth: async function (req, res) {
-        const total = await getCurrentMonthExpenditures()
+        const total = (await getCurrentMonthExpenditures())
             .map(row => row.price)
             .reduce((total, next) => total + next, 0)
         res.send({
