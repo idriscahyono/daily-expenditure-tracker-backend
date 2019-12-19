@@ -36,5 +36,23 @@ module.exports = {
         }).then(function (row) {
             res.send(row)
         })
-    }
+    },
+
+    currentMonth: function (req, res) {
+        ModelExpenditure.find().then(function (rows) {
+            const date = new Date()
+            const month = date.getMonth() + 1
+            const year = date.getFullYear()
+
+            const total = rows
+                .filter((row) => {
+                    return row.date.includes(`${month} - ${year}`)
+                })
+                .map(row => row.price)
+                .reduce((total, next) => total + next, 0)
+            res.send({
+                total
+            })
+        })
+    },
 }
