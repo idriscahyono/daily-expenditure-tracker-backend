@@ -1,27 +1,37 @@
-const ModelExpenditure = require('./ExpenditureModel')
+const ExpenditureModel = require('./ExpenditureModel')
+const CategoryModel = require('../category/CategoryModel')
+
+async function getCurrentMonthExpenditures() {
+    const date = new Date()
+    const month = date.getMonth() + 1
+    const year = date.getFullYear()
+
+    const rows = await ExpenditureModel.find()
+    return rows.filter((row) => row.date.includes(`${month} - ${year}`))
+}
 
 module.exports = {
     index: function (req, res) {
-        ModelExpenditure.find().populate('category').then(function (rows) {
+        ExpenditureModel.find().populate('category').then(function (rows) {
             res.send(rows)
         })
     },
 
     show: function (req, res) {
-        ModelExpenditure.findById(req.params.id).then(function (row) {
+        ExpenditureModel.findById(req.params.id).then(function (row) {
             res.send(row)
         })
     },
 
     store: function (req, res) {
-        ModelExpenditure.create(req.body).then(function (row) {
+        ExpenditureModel.create(req.body).then(function (row) {
             res.send(row),
                 res.status(200).send('OK')
         })
     },
 
     update: function (req, res) {
-        ModelExpenditure.findByIdAndUpdate(
+        ExpenditureModel.findByIdAndUpdate(
             req.params.id,
             req.body, {
                 new: true
@@ -31,28 +41,41 @@ module.exports = {
     },
 
     destroy: function (req, res) {
-        ModelExpenditure.findByIdAndDelete({
+        ExpenditureModel.findByIdAndDelete({
             _id: req.params.id
         }).then(function (row) {
             res.send(row)
         })
     },
 
-    currentMonth: function (req, res) {
-        ModelExpenditure.find().then(function (rows) {
-            const date = new Date()
-            const month = date.getMonth() + 1
-            const year = date.getFullYear()
+    currentMonth: async function (req, res) {
+        const total = await getCurrentMonthExpenditures()
+            .map(row => row.price)
+            .reduce((total, next) => total + next, 0)
+        res.send({
+            total
+        })
+    },
 
-            const total = rows
-                .filter((row) => {
-                    return row.date.includes(`${month} - ${year}`)
+    currentMonthCategory: async function (req, res) {
+        const currentMonthExpenditures = await getCurrentMonthExpenditures()
+
+        CategoryModel.find().then(function (categoryRows) {
+            const categoryTotals = []
+
+            categoryRows.forEach(categoryRow => {
+                categoryTotals.push({
+                    category: categoryRow.name,
+                    total: currentMonthExpenditures
+                        .filter(expenditure => expenditure.category.equals(categoryRow._id))
+                        .map(expenditure => expenditure.price)
+                        .reduce((total, next) => total + next, 0)
                 })
-                .map(row => row.price)
-                .reduce((total, next) => total + next, 0)
-            res.send({
-                total
             })
+
+            categoryTotals.sort((prev, next) => prev.total > next.total ? -1 : 1)
+
+            res.send(categoryTotals.length ? categoryTotals[0] : {})
         })
     },
 }
